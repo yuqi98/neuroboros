@@ -482,9 +482,10 @@ class Bellaria(Dataset):
         space=["onavg-ico32", "mni-4mm"],
         resample=["1step_pial_overlap", "1step_linear_overlap"],
         prep="default",
-        fp_version="20.2.7",
+        fp_version="25.2.5",
         name="bellaria",
-        root_dir="/dartfs/rc/lab/H/HaxbyLab/yuqi/Bellaria/data/nb-data/bellaria/",
+        root_dir="/dartfs/rc/lab/H/HaxbyLab/yuqi/Bellaria_new/fmriprep_25.2.5_resampled_all",
+        confounds_dir="/dartfs/rc/lab/H/HaxbyLab/feilong/nb-data/bologna117/25.2.5/confounds",
         dl_source=None,
     ):
         super().__init__(
@@ -496,11 +497,63 @@ class Bellaria(Dataset):
             prep=prep,
             fp_version=fp_version,
         )
-        self.subjects = ["100"]
-        self.tasks = ["rs1", "rsmirror", "selfknown", "landscapeunknown"]
+        self.confounds_dm = DatasetManager(name, root=confounds_dir, source=None)
+        self.subjects = [
+            "00380", "00544", "01898", "03273", "03649", "04949", "10081",
+            "12030", "12282", "13295", "13665", "13671", "14011", "14368",
+            "14661", "16903", "20812", "21249", "21291", "22897", "24131",
+            "24240", "25410", "25425", "26403", "26855", "27726", "27772",
+            "28481", "29188", "29859", "30239", "30395", "30882", "31540",
+            "31811", "32249", "32530", "33323", "35913", "39407", "41788",
+            "41889", "42589", "43042", "45129", "45145", "45302", "45541",
+            "45787", "46241", "46471", "52313", "52667", "53461", "53826",
+            "53875", "54179", "54462", "54657", "54835", "54921", "55828",
+            "56327", "56592", "56782", "56918", "56933", "57534", "61052",
+            "61316", "64843", "64951", "65364", "66386", "67508", "67795",
+            "67909", "68225", "68313", "68747", "74129", "74416", "74860",
+            "75142", "75243", "75366", "75710", "82472", "82607", "84322",
+            "84393", "85000", "85354", "85656", "86281", "86787", "87510",
+            "87516", "88025", "89050", "89334", "89771", "89876", "91177",
+            "92772", "93054", "95185", "95220", "97072", "97182", "99069",
+            "99195", "99345", "99396", "99464", "99664",
+        ]
+        self.tasks = ["rest"]
+
     def rename_func(self, sid, task, run, suffix=".npy"):
         basename = f"sub-{sid}_task-{task}{suffix}"
         return basename
+
+    def load_data(self, sid, task, run, lr, space, resample, fp_version=None):
+        # Unlike other datasets, resampled outputs live directly under
+        # `{root_dir}/resampled/...`, with no fp_version subdirectory.
+        if lr == "lr":
+            return np.concatenate(
+                [
+                    self.load_data(sid, task, run, lr_, space, resample, fp_version)
+                    for lr_ in "lr"
+                ],
+                axis=1,
+            )
+        if lr in ["l", "r"]:
+            lr = f"{lr}-cerebrum"
+        fn = ["resampled", space, lr, resample, self.rename_func(sid, task, run)]
+        dm = self.dl_dset.get(fn, on_missing="raise").astype(np.float64)
+        return dm
+
+    def load_confounds(self, sid, task, run, fp_version=None):
+        # Confounds live in a separate tree (feilong's nb-data for
+        # bologna117), tracked via a second DatasetManager.
+        suffix_li = [
+            "desc-confounds_timeseries.npy",
+            "desc-confounds_timeseries.tsv",
+            "desc-mask_timeseries.npy",
+        ]
+        return [
+            self.confounds_dm.get(
+                self.rename_func(sid, task, run, "_" + suffix), on_missing="raise"
+            )
+            for suffix in suffix_li
+        ]
 
 class Forrest(Dataset):
     """The Forrest dataset.
