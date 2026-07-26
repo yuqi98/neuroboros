@@ -476,9 +476,6 @@ class Bologna(Dataset):
             fp_version=fp_version,
         )
         self.confounds_dm = DatasetManager(name, root=confounds_dir, source=None)
-        # Unlike other datasets, subject sets (all/AD/HC/MCI/SCD) live in a
-        # separate tree, not under `root_dir`, so populate them here instead
-        # of relying on the auto-scan in Dataset.__init__.
         for fn in sorted(glob(os.path.join(subject_sets_dir, "*.txt"))):
             group = os.path.basename(fn)[:-4]
             with open(fn) as f:
