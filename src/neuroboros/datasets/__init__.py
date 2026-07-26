@@ -463,7 +463,7 @@ class Bologna(Dataset):
         name="bologna",
         root_dir="/dartfs/rc/lab/H/HaxbyLab/yuqi/Bellaria_new/fmriprep_25.2.5_resampled_all",
         confounds_dir="/dartfs/rc/lab/H/HaxbyLab/feilong/nb-data/bologna117/25.2.5/confounds",
-        subjects_fn="/dartfs/rc/lab/H/HaxbyLab/feilong/nb-data/bologna117/subject_sets/all.txt",
+        subject_sets_dir="/dartfs/rc/lab/H/HaxbyLab/feilong/nb-data/bologna117/subject_sets",
         dl_source=None,
     ):
         super().__init__(
@@ -476,8 +476,14 @@ class Bologna(Dataset):
             fp_version=fp_version,
         )
         self.confounds_dm = DatasetManager(name, root=confounds_dir, source=None)
-        with open(subjects_fn) as f:
-            self.subjects = f.read().splitlines()
+        # Unlike other datasets, subject sets (all/AD/HC/MCI/SCD) live in a
+        # separate tree, not under `root_dir`, so populate them here instead
+        # of relying on the auto-scan in Dataset.__init__.
+        for fn in sorted(glob(os.path.join(subject_sets_dir, "*.txt"))):
+            group = os.path.basename(fn)[:-4]
+            with open(fn) as f:
+                self.subject_sets[group] = f.read().splitlines()
+        self.subjects = self.subject_sets["all"]
         self.tasks = ["rest"]
 
     def rename_func(self, sid, task, run, suffix=".npy"):
