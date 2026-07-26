@@ -485,8 +485,6 @@ class Bologna(Dataset):
         return basename
 
     def load_data(self, sid, task, run, lr, space, resample, fp_version=None):
-        # Unlike other datasets, resampled outputs live directly under
-        # `{root_dir}/resampled/...`, with no fp_version subdirectory.
         if lr == "lr":
             return np.concatenate(
                 [
@@ -502,8 +500,6 @@ class Bologna(Dataset):
         return dm
 
     def load_confounds(self, sid, task, run, fp_version=None):
-        # Confounds live in a separate tree (feilong's nb-data for
-        # bologna117), tracked via a second DatasetManager.
         suffix_li = [
             "desc-confounds_timeseries.npy",
             "desc-confounds_timeseries.tsv",
