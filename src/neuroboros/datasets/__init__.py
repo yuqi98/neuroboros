@@ -461,9 +461,7 @@ class Bologna(Dataset):
         prep="default",
         fp_version="25.2.5",
         name="bologna",
-        root_dir="/dartfs/rc/lab/H/HaxbyLab/yuqi/Bellaria_new/fmriprep_25.2.5_resampled_all",
-        confounds_dir="/dartfs/rc/lab/H/HaxbyLab/feilong/nb-data/bologna117/25.2.5/confounds",
-        subject_sets_dir="/dartfs/rc/lab/H/HaxbyLab/feilong/nb-data/bologna117/subject_sets",
+        root_dir="/dartfs/rc/lab/H/HaxbyLab/feilong/nb-data/bologna117",
         dl_source=None,
     ):
         super().__init__(
@@ -475,45 +473,12 @@ class Bologna(Dataset):
             prep=prep,
             fp_version=fp_version,
         )
-        self.confounds_dm = DatasetManager(name, root=confounds_dir, source=None)
-        for fn in sorted(glob(os.path.join(subject_sets_dir, "*.txt"))):
-            group = os.path.basename(fn)[:-4]
-            with open(fn) as f:
-                self.subject_sets[group] = f.read().splitlines()
         self.subjects = self.subject_sets["all"]
         self.tasks = ["rest"]
 
     def rename_func(self, sid, task, run, suffix=".npy"):
         basename = f"sub-{sid}_task-{task}{suffix}"
         return basename
-
-    def load_data(self, sid, task, run, lr, space, resample, fp_version=None):
-        if lr == "lr":
-            return np.concatenate(
-                [
-                    self.load_data(sid, task, run, lr_, space, resample, fp_version)
-                    for lr_ in "lr"
-                ],
-                axis=1,
-            )
-        if lr in ["l", "r"]:
-            lr = f"{lr}-cerebrum"
-        fn = ["resampled", space, lr, resample, self.rename_func(sid, task, run)]
-        dm = self.dl_dset.get(fn, on_missing="raise").astype(np.float64)
-        return dm
-
-    def load_confounds(self, sid, task, run, fp_version=None):
-        suffix_li = [
-            "desc-confounds_timeseries.npy",
-            "desc-confounds_timeseries.tsv",
-            "desc-mask_timeseries.npy",
-        ]
-        return [
-            self.confounds_dm.get(
-                self.rename_func(sid, task, run, "_" + suffix), on_missing="raise"
-            )
-            for suffix in suffix_li
-        ]
 
 class Bellaria(Dataset):
     def __init__(
